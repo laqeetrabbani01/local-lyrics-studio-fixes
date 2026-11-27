@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A song for you · Local Lyrics</title>
+<meta name="robots" content="noindex">
+<style>
+  :root { --bg: #121212; --card: #181818; --text: #fff; --sub: #b3b3b3; --green: #1ed760; }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--text); font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+    display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
+  .card { width: 100%; max-width: 420px; background: linear-gradient(#2a2a2a, var(--card) 60%); border-radius: 12px; padding: 24px; }
+  .cover { width: 100%; aspect-ratio: 16 / 9; border-radius: 8px; background: #282828 center / cover no-repeat; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
+  .kicker { margin: 20px 0 4px; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--sub); }
+  h1 { margin: 0; font-size: 28px; line-height: 1.2; letter-spacing: -.02em; overflow-wrap: anywhere; }
+  .artist { margin: 4px 0 0; color: var(--sub); overflow-wrap: anywhere; }
+  .add { display: block; margin-top: 24px; padding: 14px 32px; border-radius: 999px; background: var(--green); color: #000; font-weight: 700; text-align: center; text-decoration: none; }
+  .add:hover { transform: scale(1.03); }
+  .more { display: flex; flex-wrap: wrap; gap: 8px 20px; justify-content: center; margin-top: 16px; font-size: 14px; }
+  .more a { color: var(--sub); }
+  .more a:hover { color: var(--text); }
+  .how { margin: 20px 0 0; font-size: 13px; color: var(--sub); }
+  .bad { text-align: center; }
+</style>
+</head>
+<body>
+<main class="card" id="card">
+  <div class="bad">
+    <h1>Song link</h1>
+    <p class="artist" id="msg">Loading…</p>
+  </div>
+</main>
+<script>
+  // The song is in the part after "#", which browsers never send to any server.
+  const DOWNLOAD = "https://github.com/laqeetrabbani01/local-lyrics-studio-fixes/releases/latest";
+  const card = document.getElementById("card");
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  function read() {
+    try {
+      const raw = location.hash.slice(1);
+      const b64 = raw.replace(/-/g, "+").replace(/_/g, "/");
+      const bytes = Uint8Array.from(atob(b64 + "===".slice((b64.length + 3) % 4)), (c) => c.charCodeAt(0));
+      const o = JSON.parse(new TextDecoder().decode(bytes));
+      if (o.v !== 1 || !/^[\w-]{11}$/.test(o.y || "") || !String(o.t || "").trim()) return null;
+      return { raw, id: o.y, title: String(o.t).slice(0, 200), artist: String(o.a || "").slice(0, 200), album: String(o.al || "").slice(0, 200) };
+    } catch { return null; }
+  }
+  const s = read();
+  if (!s) {
+    document.getElementById("msg").textContent = "This link doesn't have a song in it. It may have been cut off when it was copied.";
+  } else {
+    document.title = s.title + (s.artist ? " · " + s.artist : "") + " · Local Lyrics";
+    const cover = el("div", "cover");
+    cover.style.backgroundImage = `url("https://i.ytimg.com/vi/${s.id}/hqdefault.jpg")`;
+    const add = el("a", "add", "Add to my Spotify");
+    add.href = "locallyrics://add#" + s.raw;
+    const yt = el("a", "", "Listen on YouTube");
+    yt.href = "https://www.youtube.com/watch?v=" + s.id;
+    yt.rel = "noopener";
+    const get = el("a", "", "Get Local Lyrics");
+    get.href = DOWNLOAD;
+    const more = el("div", "more");
+    more.append(yt, get);
+    card.replaceChildren(cover, el("p", "kicker", "Someone shared a song"), el("h1", "", s.title),
+      ...(s.artist ? [el("p", "artist", s.artist + (s.album ? " · " + s.album : ""))] : []), add, more,
+      el("p", "how", "“Add to my Spotify” opens Local Lyrics, which gets this song from YouTube and puts it in Spotify under Local Files, with lyrics when they can be found. You need Local Lyrics installed first."));
+  }
+</script>
+</body>
+</html>
